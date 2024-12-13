@@ -30,3 +30,5 @@ published: false
 ![プロキシサーバー](./images/reverse-proxy.png)
 
 # リバースプロキシとプロキシサーバーの違い
+
+# まとめ
