@@ -115,3 +115,11 @@ https://react-hook-form.com/docs/useform/seterror
 2. InputのonChangeでバリデーションに引っかからない正常な値になった時に`clearError`して、errorsオブジェクトを空にする。
 3. エラー表示は無くなるが、`clearError`はフォームに対してsubscribrしているわけではないので、フォーム全体の状態を監視して判定する`isValid`は切り替わらない
 4. ボタンは非活性のままになる
+
+ということになります。
+
+### 解決策
+- shouldValidate
+- trigger()を挟んで再評価する
+- registerを使う
+- Controllerのrulesでバリデーションを実行
