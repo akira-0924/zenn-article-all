@@ -110,3 +110,8 @@ https://react-hook-form.com/docs/useform/seterror
 
 > This method will force set isValid formState to false. However, it's important to be aware that isValid will always be derived from the validation result of your input registration rules or schema result.
 
+つまり、この場合だと、
+1. カスタムのバリデーションに引っかかった場合は`setError`して`isValid`を強制的に`false`に切り替える
+2. InputのonChangeでバリデーションに引っかからない正常な値になった時に`clearError`して、errorsオブジェクトを空にする。
+3. エラー表示は無くなるが、`clearError`はフォームに対してsubscribrしているわけではないので、フォーム全体の状態を監視して判定する`isValid`は切り替わらない
+4. ボタンは非活性のままになる
