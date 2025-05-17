@@ -24,7 +24,7 @@ setError を使って手動でエラーを出したのに、isValid がなぜか
 - 送信ボタンはエラーがある場合は押せないようにしたい
 
 ざっくりこんな感じです。よくあるパターンかと思います。
-そして自分が最初に書いていたコードが以下になります。
+そして自分が最初に書いていたコードが以下になります。(Chakra UIを使用しています)
 ```tsx
 import React from 'react'
 import { Box, Button, Input } from '@chakra-ui/react'
@@ -81,3 +81,10 @@ export const Form4 = () => {
   )
 }
 ```
+- useFormをhookを使って`setValue`や`getValues`、`setError`や`clearErrors`をしていて、状態を管理しています。
+- `formState`プロパティから`isValid`を取得して、送信ボタンの`disabled`属性を制御している。
+- `formState`プロパティから`errors`を取得して、エラーがある場合はエラーメッセージを表示している。
+
+
+
+
