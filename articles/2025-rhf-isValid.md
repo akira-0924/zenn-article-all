@@ -1,4 +1,10 @@
-# useFormでバリデーション制御に悩んだ話 〜setErrorとisValid〜
+---
+title: "useFormでバリデーション制御に悩んだ話 〜setErrorとisValid〜"
+emoji: "😀"
+type: "tech"
+topics: [React,ReactHookForm]
+published: false
+---
 
 ## TL;DR
 - setErrorするだけではisValidが変わらない
