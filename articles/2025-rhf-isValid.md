@@ -85,6 +85,15 @@ export const Form4 = () => {
 - `formState`プロパティから`isValid`を取得して、送信ボタンの`disabled`属性を制御している。
 - `formState`プロパティから`errors`を取得して、エラーがある場合はエラーメッセージを表示している。
 
+バリデーションロジックや複数項目など実際はもう少し複雑かと思いますが、シンプルにすると大体こんな感じかなと思います。
+コードだけ見ると一見正常に動きそうですが、実際には**一度エラーになるとisValidがfalseのまま切り変わらず送信ボタンが押せなくなってしまいます。**
 
+![画面収録 2025-05-17 17.56.32.mov](https://i.gyazo.com/48999999999999999999999999999999.mov)
 
+なぜ...？と思い、公式ドキュメントを見ていたところ原因がわかりました。
+`isValid`はフォーム全体の状態を判定してtrue/falseを返します。
+しかし、`clearErrors`ではisValidには影響を与えません。
 
+https://react-hook-form.com/docs/useform/clearerrors
+
+> This will not affect the validation rules attached to each inputs.
