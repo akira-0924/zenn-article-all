@@ -97,3 +97,10 @@ export const Form4 = () => {
 https://react-hook-form.com/docs/useform/clearerrors
 
 > This will not affect the validation rules attached to each inputs.
+
+そして、`setError`では強制的に`isValid`をfalseにします。
+
+https://react-hook-form.com/docs/useform/seterror
+
+> This method will force set isValid formState to false. However, it's important to be aware that isValid will always be derived from the validation result of your input registration rules or schema result.
+
