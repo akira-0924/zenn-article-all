@@ -24,3 +24,60 @@ setError を使って手動でエラーを出したのに、isValid がなぜか
 - 送信ボタンはエラーがある場合は押せないようにしたい
 
 ざっくりこんな感じです。よくあるパターンかと思います。
+そして自分が最初に書いていたコードが以下になります。
+```tsx
+import React from 'react'
+import { Box, Button, Input } from '@chakra-ui/react'
+import { useForm } from 'react-hook-form'
+
+type FormData = {
+  name: string
+}
+
+export const Form4 = () => {
+  const {
+    setValue,
+    getValues,
+    handleSubmit,
+    setError,
+    clearErrors,
+    formState: { errors, isValid }
+  } = useForm<FormData>({
+    mode: 'all',
+    defaultValues: { name: '' }
+  })
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+
+    if (value.length > 5) {
+      setError('name', { message: '5文字以内で入力してください。' })
+    } else if (value.length === 0) {
+      setError('name', { message: '必須項目です。' })
+    } else {
+      clearErrors('name')
+    }
+    setValue('name', value)
+  }
+
+  const onSubmit = (data: FormData) => {}
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      <Input
+        w="50%"
+        name="name"
+        value={getValues('name')}
+        placeholder="5文字以内"
+        onChange={handleChange}
+      />
+      <Box mt={2}>
+        {errors.name && <p style={{ color: 'red' }}>{errors.name.message}</p>}
+      </Box>
+      <Button type="submit" bg="blue.500" color="white" disabled={!isValid}>
+        Submit
+      </Button>
+    </form>
+  )
+}
+```
