@@ -122,6 +122,7 @@ https://react-hook-form.com/docs/useform/seterror
 ではどうすればよかったのか。色々試しました。結論としては、`register()`を使ってフォーム値として登録すれば良いのですが、他にも方法があるのではと思い検証してみました。
 
 1. setValueするときに`shouldValidate`オプションを使ってみる
+
 まず試してみたことがこれです。
 
 https://react-hook-form.com/docs/useform/setvalue
@@ -131,10 +132,27 @@ Whether to compute if your entire form is valid or not (subscribed to isValid).
 
 一度エラーになった後`isValid`がfalseのままなのが問題なら、その後正常な値をsetValueする時に`shouldValidate: true`オプションを使えば再評価されて切り替わるんじゃないか？と思いました。
 
+```tsx
+if (value.length > 5) {
+      setError('name', { message: '5文字以内で入力してください。' })
+    } else if (value.length === 0) {
+      setError('name', { message: '必須項目です。' })
+    } else {
+      clearErrors('name')
+    }
+    setValue('name', value, { shouldValidate: true })
+    // setValue('name', value)
+```
+
 しかし、実際の挙動は以下でした。
 
 ![a](/images/rhf-2.gif)
 
-- trigger()を挟んで再評価する
+はい。ボタンがずっと活性状態です。コンソールを見るとわかるのですが、`setError`では確かにisValidがfalseになっています。が、その後すぐにtrueに切り替わっています。そしてerrorsオブジェクトは期待通り更新されたままです。<br>
+これも結局、setErrorしただけでは、フォームに対して値を登録しているわけではないので、isValidに影響がないという仕様が関係しています。ドキュメントよるとsubscribed to isValidで、`shouldValidate: true`で確かにフォーム対して登録しているのですが、現状のコードではバリエーション自体はuseFormの管理下にありません。onChangeでif-else文で独自で書いた分岐処理をバリデーションとしているだけであって、それがusFormに登録されているわけではないのです。なので、onChangeで最後に`setValue`する際にどんな値でもOKという判定になり、isValidは必ずtrueに切り替わるということです。これではダメですね...
+
+2. `trigger()`を挟んで再評価する
+ここまで読んでいただいたらもうお分かりかと思うのですが、これも1.の`shouldValidate: true`と同様の動きになります。なぜならカスタムのバリデーションがuseFormの管理下にあらず、内部的にはバリデーションなしのどんな値でもOKな状態なので、`trigger()`でフォームの値を再評価しても`isValid`は必ずtrueに切り替わるだけです。なのでこれもダメでした...
+
 - registerを使う
 - Controllerのrulesでバリデーションを実行
