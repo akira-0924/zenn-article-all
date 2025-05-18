@@ -146,7 +146,7 @@ if (value.length > 5) {
 
 しかし、実際の挙動は以下でした。
 
-![a](/images/rhf-2.gif)
+![b](/images/rhf-2.gif)
 
 はい。ボタンがずっと活性状態です。コンソールを見るとわかるのですが、`setError`では確かにisValidがfalseになっています。が、その後すぐにtrueに切り替わっています。そしてerrorsオブジェクトは期待通り更新されたままです。<br>
 これも結局、setErrorしただけでは、フォームに対して値を登録しているわけではないので、isValidに影響がないという仕様が関係しています。ドキュメントよるとsubscribed to isValidで、`shouldValidate: true`で確かにフォーム対して登録しているのですが、現状のコードではバリエーション自体はuseFormの管理下にありません。onChangeでif-else文で独自で書いた分岐処理をバリデーションとしているだけであって、それがusFormに登録されているわけではないのです。なので、onChangeで最後に`setValue`する際にどんな値でもOKという判定になり、isValidは必ずtrueに切り替わるということです。これではダメですね...
@@ -154,5 +154,27 @@ if (value.length > 5) {
 2. `trigger()`を挟んで再評価する
 ここまで読んでいただいたらもうお分かりかと思うのですが、これも1.の`shouldValidate: true`と同様の動きになります。なぜならカスタムのバリデーションがuseFormの管理下にあらず、内部的にはバリデーションなしのどんな値でもOKな状態なので、`trigger()`でフォームの値を再評価しても`isValid`は必ずtrueに切り替わるだけです。なのでこれもダメでした...
 
-- registerを使う
+3. registerを使う
+
+https://react-hook-form.com/docs/useform/register
+
+次は`register()`使ってフォームに値を登録する方法です。registerメソッドには第二引数でオプションが指定できます。下記のようにバリデーションを登録しました。
+
+```tsx
+<Input
+  w="50%"
+  placeholder="5文字以内"
+  type="text"
+  {...register('name', {
+    required: '必須項目です',
+    maxLength: {
+      value: 5,
+      message: '5文字以内で入力してください'
+    }
+  })}
+/>
+```
+
+![c](/images/rhf-3.gif)
+
 - Controllerのrulesでバリデーションを実行
