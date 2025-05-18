@@ -10,9 +10,7 @@ published: false
 - setErrorするだけではisValidが変わらない
 - 素直にregisterやControllerのonChangeを使おう
 
-## 目次
-
-### はじめに
+## はじめに
 React Hook Form（以下 RHF）は、軽量で直感的に使えるフォームライブラリとして、多くのReactプロジェクトで利用されています。実際に使ってみると、register や Controller を通して簡単にバリデーションを設定でき、フォームの状態も formState を通じて一括管理できるので非常に便利です。
 
 しかし、実際の開発では「ちょっとした例外的なケース」にぶつかることがあります。今回私が遭遇したのはその一つ。
@@ -158,7 +156,9 @@ if (value.length > 5) {
 
 https://react-hook-form.com/docs/useform/register
 
-次は`register()`使ってフォームに値を登録する方法です。registerメソッドには第二引数でオプションが指定できます。下記のようにバリデーションを登録しました。
+次は`register()`使ってフォームに値を登録する方法です。
+register を使うことで、React Hook Form に対して input 要素とバリデーションルールの紐付けが明示的に行われます。そのため、値が変化した際に自動でバリデーションが実行され、isValid が正しく反映されます。
+registerメソッドには第二引数でオプションが指定できます。下記のようにバリデーションを登録しました。
 
 ```tsx
 <Input
