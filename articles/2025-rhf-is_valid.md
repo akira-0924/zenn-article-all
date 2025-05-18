@@ -177,4 +177,6 @@ https://react-hook-form.com/docs/useform/register
 
 ![c](/images/rhf-3.gif)
 
+これはうまく動いてそうです。registerを使ったからというより、バリデーションをuseFormの監視下に登録したということですね。
+
 - Controllerのrulesでバリデーションを実行
