@@ -294,4 +294,6 @@ const onSubmit = (data: FormData) => {
 （ちなみに入力するとバリデーションが再評価されるのでclearErrorは必要ありません。）
 
 ## まとめ
-今回はuseFormのisValidとsetErrorの関係について
+今回はuseFormのisValidとsetErrorの関係についてみてきました。
+普通はregisterを使うことがほぼだと思うので、あまり気にすることはないと思うのですが、サーバー側のエラーをsetErrorするようにしたり、`shouldValidate`オプションだったり、知らなかったことも多かったので良い勉強になりました。
+useFormのバリデーション周りで困っている方のヒントになれば幸いです。
