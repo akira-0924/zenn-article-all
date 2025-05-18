@@ -121,7 +121,7 @@ https://react-hook-form.com/docs/useform/seterror
 ## どうやって解決するか
 ではどうすればよかったのか。色々試しました。結論としては、`register()`を使ってフォーム値として登録すれば良いのですが、他にも方法があるのではと思い検証してみました。
 
-1. setValueするときに`shouldValidate`オプションを使ってみる
+### 1. setValueするときに`shouldValidate`オプションを使ってみる
 
 まず試してみたことがこれです。
 
@@ -151,10 +151,10 @@ if (value.length > 5) {
 はい。ボタンがずっと活性状態です。コンソールを見るとわかるのですが、`setError`では確かにisValidがfalseになっています。が、その後すぐにtrueに切り替わっています。そしてerrorsオブジェクトは期待通り更新されたままです。<br>
 これも結局、setErrorしただけでは、フォームに対して値を登録しているわけではないので、isValidに影響がないという仕様が関係しています。ドキュメントよるとsubscribed to isValidで、`shouldValidate: true`で確かにフォーム対して登録しているのですが、現状のコードではバリエーション自体はuseFormの管理下にありません。onChangeでif-else文で独自で書いた分岐処理をバリデーションとしているだけであって、それがusFormに登録されているわけではないのです。なので、onChangeで最後に`setValue`する際にどんな値でもOKという判定になり、isValidは必ずtrueに切り替わるということです。これではダメですね...
 
-2. `trigger()`を挟んで再評価する
+### 2. `trigger()`を挟んで再評価する
 ここまで読んでいただいたらもうお分かりかと思うのですが、これも1.の`shouldValidate: true`と同様の動きになります。なぜならカスタムのバリデーションがuseFormの管理下にあらず、内部的にはバリデーションなしのどんな値でもOKな状態なので、`trigger()`でフォームの値を再評価しても`isValid`は必ずtrueに切り替わるだけです。なのでこれもダメでした...
 
-3. registerを使う
+### 3. registerを使う
 
 https://react-hook-form.com/docs/useform/register
 
@@ -179,4 +179,54 @@ https://react-hook-form.com/docs/useform/register
 
 これはうまく動いてそうです。registerを使ったからというより、バリデーションをuseFormの監視下に登録したということですね。
 
-- Controllerのrulesでバリデーションを実行
+### 4. Controllerのrulesでバリデーションを実行
+
+最後にRHFの`Controller`コンポーネントを使う方法です。
+
+https://react-hook-form.com/docs/usecontroller/controller
+
+
+```tsx
+<Controller
+  control={control}
+  name="name"
+  rules={{
+    maxLength: { value: 5, message: '5文字以内で入力してください' },
+    required: { value: true, message: '必須項目です' }
+  }}
+  render={({ field: { value, onChange }, fieldState: { error } }) => (
+    <>
+      <Input
+        value={value ?? ''}
+        w="50%"
+        placeholder="5文字以内"
+        type="text"
+        onChange={onChange}
+      />
+      <Box mt={2}>
+        {error && <p style={{ color: 'red' }}>{error.message}</p>}
+      </Box>
+    </>
+  )}
+/>
+```
+
+これは、`<Controller></Controller>`で囲い、useFormから`control`プロパティを受け取りそれをそのままControllerのcontrol propsに渡してあげます。（これで監視下にするみたいなイメージです）
+<br>そして、`render()`の中で該当のInputをレンダリングします。Controllerには`rules`propsが用意されており、ここにバリデーションを設定することができます。
+
+この場合は、render()の引数から`field.value`や`fieldState.error`を取得できるので、そのまま値をセットできます。onChangeも独自で関数を定義して、registerやsetValueできますが、これも`field.onChange`を取得できるのでそのままInputのonChangeイベントに渡してあげると楽に実装できます。
+
+ただし、一点だけ注意する部分あり、`field.onChange`を使う場合はuseFormの`mode`を`onChange` or `onBlur` or `all`等に変更してください。デフォルトが`onSubmit`になっており、送信ボタンを押さないとerrorsオブジェクトに値が入ってこないので調整が必要です
+```tsx
+const {
+  handleSubmit,
+  getValues,
+  control,
+  formState: { isValid }
+} = useForm<FormData>({
+  mode: 'onChange',
+  defaultValues: {
+    name: 'テスト',
+  }
+})
+```
