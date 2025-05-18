@@ -23,7 +23,7 @@ setError を使って手動でエラーを出したのに、isValid がなぜか
 
 この記事では、この現象を再現したシンプルなコードと、調査・検証の過程を共有します。React Hook Form を使っていて、「あれ？なんでこれ通っちゃうの？」と感じた方のヒントになれば嬉しいです。
 
-### 今回のケース
+## 今回のケース
 改めて、今回遭遇してケースをシンプルにした形で整理します。
 - RHFを使ってバリデーション付きのフォーム機能を実装
 - Inputが1つあり、文字数の制限、必須項目としてバリデーションを設定し、エラーを表示したい
@@ -113,13 +113,24 @@ https://react-hook-form.com/docs/useform/seterror
 つまり、この場合だと、
 1. カスタムのバリデーションに引っかかった場合は`setError`して`isValid`を強制的に`false`に切り替える
 2. InputのonChangeでバリデーションに引っかからない正常な値になった時に`clearError`して、errorsオブジェクトを空にする。
-3. エラー表示は無くなるが、`clearError`はフォームに対してsubscribrしているわけではないので、フォーム全体の状態を監視して判定する`isValid`は切り替わらない
+3. エラー表示は無くなるが、`clearError`はフォームに対してsubscribeしているわけではないので、フォーム全体の状態を監視して判定する`isValid`は切り替わらない
 4. ボタンは非活性のままになる
 
 ということになります。
 
-### 解決策
-- shouldValidate
+## どうやって解決するか
+ではどうすればよかったのか。色々試しました。結論としては、`register()`を使ってフォーム値として登録すれば良いのですが、他にも方法があるのではと思い検証してみました。
+
+1. setValueするときに`shouldValidate`オプションを使ってみる
+まず試してみたことがこれです。
+
+https://react-hook-form.com/docs/useform/setvalue
+
+>Whether to compute if your input is valid or not (subscribed to errors).
+Whether to compute if your entire form is valid or not (subscribed to isValid).
+
+一度エラーになった後
+
 - trigger()を挟んで再評価する
 - registerを使う
 - Controllerのrulesでバリデーションを実行
