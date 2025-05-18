@@ -16,7 +16,7 @@ published: false
 React Hook Form（以下 RHF）は、軽量で直感的に使えるフォームライブラリとして、多くのReactプロジェクトで利用されています。実際に使ってみると、register や Controller を通して簡単にバリデーションを設定でき、フォームの状態も formState を通じて一括管理できるので非常に便利です。
 
 しかし、実際の開発では「ちょっとした例外的なケース」にぶつかることがあります。今回私が遭遇したのはその一つ。
-setError を使って手動でエラーを出したのに、isValid がなぜか true のままになってしまう──という現象です。
+setError を使って手動でエラーを出したのに、isValid がなぜか true のままになってしまう、という現象です。
 
 バリデーションエラーが表示されているのに、送信ボタンが押せてしまう…
 フォームの見た目と状態が一致しないもどかしさに、思わずコードとにらめっこしてしまいました。
@@ -230,3 +230,66 @@ const {
   }
 })
 ```
+
+## じゃあsetErrorっていつ使うの？
+
+ここまでで、isValidとsetError、clearErrorについてみてきましたが、「isValidに影響を与えないのであればclearErrorやsetErrorってなんのためにあるの？」と疑問に思いました。
+そこで、もう少しドキュメントを読み進めていると、
+
+>Can be useful in the handleSubmit method when you want to give error feedback to a user after async validation. (ex: API returns validation errors)
+とありました。
+
+1つの使用例としてクライアント側のバリデーションではなくsubmitをしてAPIからエラーが返ってきた時にsetErrorしてerrorを表示したりできるよってことですね。コードで書くと以下のような感じでしょうか。
+```tsx
+const fakeApiResponse = {
+  success: false,
+  errors: {
+    name: 'このnameは既に存在します'
+  }
+}
+
+const onSubmit = (data: FormData) => {
+  console.log('送信データ:', data)
+
+  console.log(data);
+  if (!fakeApiResponse.success) {
+    Object.entries(fakeApiResponse.errors).forEach(([field, message]) => {
+      setError(field as keyof FormData, {
+        type: 'server',
+        message
+      })
+    })
+    return
+  }
+
+  alert('送信成功')
+}
+<form onSubmit={handleSubmit(onSubmit)}>
+  <Input
+    w="50%"
+    placeholder="5文字以内"
+    type="text"
+    {...register('name', {
+      required: '必須項目です',
+      maxLength: {
+        value: 5,
+        message: '5文字以内で入力してください'
+      }
+    })}
+  />
+  <Box mt={2} mb={2}>
+    {errors.name && <p style={{ color: 'red' }}>{errors.name.message}</p>}
+  </Box>
+
+  <Button type="submit" bg="blue.500" color="white" disabled={!isValid}>
+    Submit
+  </Button>
+</form>
+```
+
+![d](/images/rhf-4.gif)
+
+（ちなみに入力するとバリデーションが再評価されるのでclearErrorは必要ありません。）
+
+## まとめ
+今回はuseFormのisValidとsetErrorの関係について
