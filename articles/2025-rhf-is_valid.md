@@ -129,7 +129,11 @@ https://react-hook-form.com/docs/useform/setvalue
 >Whether to compute if your input is valid or not (subscribed to errors).
 Whether to compute if your entire form is valid or not (subscribed to isValid).
 
-一度エラーになった後
+一度エラーになった後`isValid`がfalseのままなのが問題なら、その後正常な値をsetValueする時に`shouldValidate: true`オプションを使えば再評価されて切り替わるんじゃないか？と思いました。
+
+しかし、実際の挙動は以下でした。
+
+![a](/images/rhf-2.gif)
 
 - trigger()を挟んで再評価する
 - registerを使う
