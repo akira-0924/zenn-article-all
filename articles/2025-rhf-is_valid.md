@@ -147,10 +147,13 @@ if (value.length > 5) {
 ![b](/images/rhf-2.gif)
 
 はい。ボタンがずっと活性状態です。コンソールを見るとわかるのですが、`setError`では確かにisValidがfalseになっています。が、その後すぐにtrueに切り替わっています。そしてerrorsオブジェクトは期待通り更新されたままです。<br>
-これも結局、setErrorしただけでは、フォームに対して値を登録しているわけではないので、isValidに影響がないという仕様が関係しています。ドキュメントよるとsubscribed to isValidで、`shouldValidate: true`で確かにフォーム対して登録しているのですが、現状のコードではバリエーション自体はuseFormの管理下にありません。onChangeでif-else文で独自で書いた分岐処理をバリデーションとしているだけであって、それがuseFormに登録されているわけではないのです。なので、onChangeで最後に`setValue`する際にどんな値でもOKという判定になり、isValidは必ずtrueに切り替わるということです。これではダメですね...
+これも結局、setErrorしただけでは、フォームに対して値を登録しているわけではないので、isValidに影響がないという仕様が関係しています。ドキュメントよるとsubscribed to isValidと書いてあり、`shouldValidate: true`で確かにフォーム対して登録しているのですが、現状のコードではバリエーション自体はuseFormの管理下にありません。onChangeイベントのif-else文で独自で書いた分岐処理をバリデーションとしているだけであって、それがuseFormに登録されているわけではないのです。なので、onChangeで最後に`setValue`をしてもuseForm側からすれば、"どんな値でもOK"という判定になり、isValidは必ずtrueに切り替わるということです。これではダメですね...
 
 ### 2. `trigger()`を挟んで再評価する
-ここまで読んでいただいたらもうお分かりかと思うのですが、これも1.の`shouldValidate: true`と同様の動きになります。なぜならカスタムのバリデーションがuseFormの管理下にあらず、内部的にはバリデーションなしのどんな値でもOKな状態なので、`trigger()`でフォームの値を再評価しても`isValid`は必ずtrueに切り替わるだけです。なのでこれもダメでした...
+
+https://react-hook-form.com/docs/useform/trigger
+
+ここまで読んでいただいた方はなんとなく察しがつくかと思いますが、これも1の`shouldValidate: true`と同様の動きになります。なぜならカスタムのバリデーションがuseFormの管理下にあらず、内部的にはバリデーションなしのどんな値でもOKな状態なので、`trigger()`でフォームの値を再評価しても`isValid`は必ずtrueに切り替わるだけです。なのでこれもダメでした...
 
 ### 3. registerを使う
 
@@ -216,7 +219,7 @@ https://react-hook-form.com/docs/usecontroller/controller
 
 この場合は、render()の引数から`field.value`や`fieldState.error`を取得できるので、そのまま値をセットできます。onChangeも独自で関数を定義して、registerやsetValueできますが、これも`field.onChange`を取得できるのでそのままInputのonChangeイベントに渡してあげると楽に実装できます。
 
-ただし、一点だけ注意する部分あり、`field.onChange`を使う場合はuseFormの`mode`を`onChange` or `onBlur` or `all`等に変更してください。デフォルトが`onSubmit`になっており、送信ボタンを押さないとerrorsオブジェクトに値が入ってこないので調整が必要です
+ただし、一点だけ注意する部分あり、`field.onChange`を使う場合はuseFormの`mode`を`onChange` or `onBlur` or `all`等に変更してください。デフォルトが`onSubmit`になっており、送信ボタンを押さないとerrorsオブジェクトに値が入ってこないので調整が必要です。
 ```tsx
 const {
   handleSubmit,
