@@ -290,7 +290,7 @@ const onSubmit = (data: FormData) => {
 
 ![d](/images/rhf-4.gif)
 
-確かにuseFormでerrorの状態を管理する場合、useFormのerrorsに追加しないと2重管理になってしまいますね...。だから`setError`してuseFormのerrorに直接登録するということですね!
+確かにuseFormでerrorの状態を管理する場合、APIレベルのエラーもuseFormのerrorsオブジェクトに追加しないと2重管理になってしまいますね...。だから`setError`してuseFormのerrorに直接登録するということですね!
 
 （ちなみに入力するとバリデーションが再評価されるのでclearErrorは必要ありません。）
 
