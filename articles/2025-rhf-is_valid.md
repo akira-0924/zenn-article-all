@@ -4,6 +4,7 @@ emoji: "😀"
 type: "tech"
 topics: [React,ReactHookForm]
 published: true
+publication_name: atamaplus
 ---
 
 ## TL;DR
