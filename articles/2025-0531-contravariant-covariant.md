@@ -6,7 +6,7 @@ topics: [TypeScript]
 published: false
 ---
 
-TypeScriptの**共変（Covariance）**と**反変（Contravariance）**について、ちゃんと理解できた気がしたので、自分なりにまとめてみます。
+TypeScriptの**共変（Covariance）** と**反変（Contravariance）** について、ちゃんと理解できた気がしたので、自分なりにまとめてみます。
 
 
 ## 戻り値の共変
