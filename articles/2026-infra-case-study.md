@@ -2,7 +2,7 @@
 title: "動くインフラ"から"運用するインフラ"へ視点が変わった話
 emoji: "🔧"
 type: "idea"
-topics: ["AWS", "インフラ", "SRE", "Aurora", "CDK"]
+topics: [AWS, インフラ, SRE, CDK]
 published: false
 ---
 
