@@ -1,3 +1,11 @@
+---
+title: "動くインフラ"から"運用するインフラ"へ視点が変わった話
+emoji: "🔧"
+type: "idea"
+topics: ["AWS", "インフラ", "SRE", "Aurora", "CDK"]
+published: false
+---
+
 ## はじめに
 
 会社のプロジェクトでインフラ領域を担当する機会がありました。
