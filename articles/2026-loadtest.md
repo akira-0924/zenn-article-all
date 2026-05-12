@@ -259,7 +259,7 @@ exec k6 "${K6_ARGS[@]}"
 ```
 
 ### テストの種類と設定値(`/tests`)
-smoke testはこんな感じです。
+#### smoke test
 
 ```
 import { setup } from '../utils/setup.ts';
@@ -314,63 +314,160 @@ thresholds
 https://grafana.com/docs/k6/latest/using-k6/thresholds/
 
 
+#### load test
+options.scenarios で 複数の負荷プロファイルを 1 回の実行に並べています。constant-arrival-rateというexecutorを使用します。
+
+https://grafana.com/docs/k6/latest/using-k6/scenarios/executors/constant-arrival-rate/
+
+```
+import { setup } from '../utils/setup.ts';
+import { runTest } from '../utils/runners/test-runner.ts';
+import type { ScenarioName } from '../scenarios/index.ts';
+
+export { setup };
+
+/**
+ * Load Test
+ *
+ * 目的: 通常時やピーク時に想定されるアクセス数をかける
+ * - 1000人シナリオ: 0.33 req/s、10分間
+ * - 5000人シナリオ: 1.67 req/s、10分間
+ * - 10000人シナリオ: 3.33 req/s、10分間
+ * - 実行時間: 30分 + 待機時間
+ */
+const scenarioName = __ENV.SCENARIO as ScenarioName;
+// 前のシナリオ終了後の待機時間（分）
+// problemThenQuestion: シナリオ間でLLM処理待機（15分）
+const startTimeDelayAfterPreviousScenario = scenarioName === 'problemThenQuestion' ? 15 : 0;
+
+const createScenarios = () => {
+  const DURATION = 10;
+  // 5000-usersは1000-users終了後 + 待機時間後に開始
+  const startTime5000Users = DURATION + startTimeDelayAfterPreviousScenario;
+  // 10000-usersは5000-users終了後 + 待機時間後に開始
+  const startTime10000Users = startTime5000Users + DURATION + startTimeDelayAfterPreviousScenario;
+
+  const baseScenarios = {
+    '1000-users': {
+      executor: 'constant-arrival-rate',
+      rate: 1,
+      timeUnit: '3s', // 0.33 req/s
+      duration: `${DURATION}m`,
+      preAllocatedVUs: 10,
+      maxVUs: 100,
+    },
+    '5000-users': {
+      executor: 'constant-arrival-rate',
+      rate: 5,
+      timeUnit: '3s', // 約1.67 req/s
+      duration: `${DURATION}m`,
+      preAllocatedVUs: 20,
+      maxVUs: 500,
+      startTime: `${startTime5000Users}m`,
+    },
+    '10000-users': {
+      executor: 'constant-arrival-rate',
+      rate: 10,
+      timeUnit: '3s', // 約3.33 req/s
+      duration: `${DURATION}m`,
+      preAllocatedVUs: 50,
+      maxVUs: 1000,
+      startTime: `${startTime10000Users}m`,
+    },
+  };
+
+  return baseScenarios;
+};
+
+export const options = {
+  scenarios: createScenarios(),
+  thresholds: {
+    // HTTP 5xxエラー率: < 0.5%
+    'http_req_failed{status:>=500}': ['rate<0.005'],
+    // HTTP 4xxエラー率: < 2%（429を含む）
+    'http_req_failed{status:>=400,status:<500}': ['rate<0.02'],
+    // タイムアウトエラー: 0件
+    'http_req_failed{error:timeout}': ['rate==0'],
+    // レスポンス時間: p95 < 2秒
+    'http_req_duration{type:api}': ['p(95)<2000'],
+  },
+};
+
+export default runTest;
+```
+
+constant-arrival-rate
+「単位時間あたりに何回イテレーションを開始するか」をおおよそ一定に保ちます。VU の思考時間やレスポンスが長くても、目標レートを維持するために VU 数が増減します（上限は maxVUs）。スモークのように「合計イテレーション数」を決めるのではなく、キャパシティ試算で出した req/s に寄せるのに向いています。
+
+rate と timeUnit
+公式どおり「timeUnit あたり rate 回イテレーションを開始する」イメージです。ここでは timeUnit: '3s' なので、例えば rate: 1 は 3 秒に 1 回開始 → 約 0.33 回/秒、rate: 5 は 3 秒に 5 回 → 約 1.67 回/秒、rate: 10 は 約 3.33 回/秒 になります（コメントの数値と対応）。
+
+duration
+各シナリオは 10 分間、そのレートを維持します。3 段あるので 負荷をかけ続けている時間の合計は 30 分です。
+
+preAllocatedVUs / maxVUs
+事前確保する VU と、k6 がレート維持のために増やせる上限です。レートや応答時間が上がるほど VU が必要になるので、**途中で「VU が足りずに目標レートに届かない」**とならないよう、だいたいの余裕を見て決めます（公式の executor ページに挙動の説明があります）。
+
+複数シナリオと startTime
+1000-users → 5000-users → 10000-users を 同じ export default runTest のまま順番に実行するために、5000-users と 10000-users に startTime を付けています。k6 の「シナリオ」単位で開始時刻をずらす考え方は、公式の [Scenarios](https://grafana.com/docs/k6/latest/using-k6/scenarios/) でも説明されています。
+
+startTimeDelayAfterPreviousScenario（15分）
+SCENARIO が problemThenQuestion のときだけ、各段のあとに15分の間隔を空けています。これはPOST からポーリングまでの1シナリオの最長が15分であり、前の段のリクエストがキューや DB に残ったまま次の段に入ると、見かけ上だけ負荷が積み上がることがあるため、その間を置いて系全体が追いつく時間を確保する、という意図です。
+
+### (LLM呼び出しが関わる場合)
+今回は実際のLLM呼び出しは行わず、モックする形にしました。
+一番の理由はコストです。そのまま叩くと、試験の規模や再実行の回数に比例して費用が伸びるほか、試験たびに結果が変わりすぎて「インフラが耐えたか」の判断がしづらくなることもあると思います。そこで今回はLLM呼び出しをスタブし、応答までにランダムな待ち時間を挟む形にして、生成待ちを含むフローでも 極端に楽観的にならないようにしました。プロバイダ側のレート制限やクォータに当たったときの挙動は、別の論点になるので 今回のスコープからは外しています。
+
+
+
 ---
 
-## 5. 単一のAPIを叩く
+## 7. サーバー側インフラの設定（環境作成）
 
-いきなり本番相当の負荷をかける前に、**エンドポイント単体** で動作確認しました。
+次に環境を用意します。今回は1シナリオなのでローカルからk6コマンドを叩くだけで、あとは接続先サーバーを開発環境にするのかステージング環境にするのかになります。原則として「本番環境と同じ構成、性能、データ量で確認できる」のがベストかなと思います。
 
-- ステージング／負荷試験用 URL に向けて、VU 1〜数名で数リクエスト
-- 期待ステータスコード、レスポンス時間の目安、認証エラーが出ていないか
+今回は負荷試験用の環境を新たに作成しました。
 
-ここで **スクリプトのバグ（URL 誤り、ヘッダ不足、ポーリング間隔が短すぎる等）** を潰しておくと、後の「インフラがボトルネックか／試験がおかしいか」の切り分けが楽になります。LLM 絡みの API はレスポンスが重くなりがちなので、まず単発で「正常系の目安時間」を体感しておくのも有効でした。
+決めては以下です。
 
----
+- インフラはIaC(AWS CDK)で管理しており、環境の複製、削除が比較的楽
+- 開発環境は構成や設定値が異なる部分が多い(一時的に設定変えることもできるが、構成も合わせてとなると専用の環境をゼロから作った方が楽だと判断)
+- ステージング環境はAWSアカウントが同じだった。
+  - アカウント単位の制限が本番環境に影響しうる(例: Lambdaの同時起動数)
+  - メンテナンス時間を設けたり、深夜帯にやる選択肢もあるが、その時間で絶対に終わる見込みはなくリスクが大きい
 
-## 6. サーバー側インフラの設定（環境作成）
+上記に加えて後述するモニタリングも専用環境用に可視化された方がわかりやすいというのもあります。
 
-試験は **本番とどこまで揃えるか** が論点になります。今回は（例として）次を決め打ちしました。
+## 8. モニターを作成
 
-- 本番と同系のスタックで **負荷試験専用** の環境を切る／既存ステージングを流用する、のどちらか
-- DB や LLM 呼び出しを **本番と同じクォータ・同じ限界** に近づけるか、モックにするか
-- 計測: CloudWatch 等でどのダッシュボードを見るか、事前に URL やアラームをメモ
+これはデータさえ取れていれば後に設定しても問題ないですが、今回は事前にモニタリングしやすいようにDatadogのダッシュボードを作成しておきました。もし本番環境用に運用しているものがあればそれをクローンする形でも良いと思いますし、いちいちAWSのコンソールからリソースごとのモニタリングをポチポチ確認するよりかは、一元管理してあると楽だと思うので、事前に作って実行中もリアルタイムで確認できる状態にしておくと良いのかなと思います。
 
-**差し替え用メモ**
+![](https://static.zenn.studio/user-upload/6d21fbe1f9e8-20260512.png)
 
-- 本番と差分がある部分（データ量、キャッシュの有無など）: ___
 
-「本番と完全一致」は理想として難しいことが多いので、**差分があるなら試験結果の解釈にどう注釈を付けるか** をチームで共有しておくと、評価の議論が早くなります。
-
----
 
 ## 7. テスト実行・計測
 
-準備が整ったら、k6 を実行して **同時に観測** します。
+ここまできたらあとは実行するだけです！
+前述の通り、今回はローカルからコマンドを叩くだけなので、実行は
 
-- k6 のサマリ（http_req_duration、failed 率、iteration 数）
-- インフラメトリクス（CPU、接続数、スロットリング、キュー滞留など。プロダクトに合わせてピックアップ）
-- アプリログ（タイムアウト、リトライ、レート制限に引っかかっていないか）
+```
+npm run smoke --scenario=xxx
+```
 
-実行ごとに **コマンドライン引数・環境変数・スクリプトの Git リビジョン** を残しておくと、後から「そのときどの設定だったか」を追いやすいです。
+```
+npm run load --scenario=xxx
+```
 
-**差し替え用メモ**
-
-- 代表実行1: 日付 / 負荷条件 / 結果の一言: ___
-- 代表実行2: ___
+するだけですね。smokeは一瞬で終わりますが、loadテストは時間がかかるので優雅にコーヒーでも飲みながらメトリクスを観察しましょう。(本当は実行ログの画像貼っておきたかったんですが用意するのが大変だったので気が向いたら貼ります)
 
 ---
 
 ## 8. 評価・修正
-
-結果を **ステップ2の目的・合格ライン** に照らして評価しました。
-
-- 閾値を満たしたか。ギリギリならマージンは十分か
-- ボトルネックがインフラかアプリか外部 API かを切り分け
-- 対応が必要ならチケット化（設定変更、キャッシュ、レート制限、非同期処理の並列度など）→ 修正後に同じシナリオで再実行
-
-試験自体の改善（ポーリング間隔の現実味、VU のランプアップなど）もここに含まれます。**一回で終わらず、評価と修正のループ** が負荷試験タスクの本体だと感じました。
+結果は以下のようになりました。
 
 ---
+
 
 ## まとめ
 
