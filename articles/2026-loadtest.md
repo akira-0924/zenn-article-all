@@ -462,7 +462,7 @@ npm run load --scenario=xxx
 
 ---
 
-## 8. 評価・修正
+## 9. 評価・修正
 結果は以下のようになりました。
 
 ### smoke test
