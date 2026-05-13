@@ -29,7 +29,7 @@ published: false
 
 ![](https://static.zenn.studio/user-upload/63cc524f6afe-20260513.png)
 
-CloudFront（Lambda@Edge 付き）が入口で、S3 から SPA と画像を配信し、API は VPC 内の API Lambda（Docker）に届きます。API は SQS のメインキューに処理を渡し、Worker Lambda（Docker）が Amazon Bedrock で LLM 処理を行います。永続データは RDS Proxy 経由の Aurora（DB サブネット）、キュー失敗は DLQ です。
+CloudFront（Lambda@Edge 付き）が入口で、S3 から SPA と画像を配信し、API は VPC 内の API Lambda（Docker）に届きます。API は SQS のメインキューに処理を渡し、Worker Lambda（Docker）が プロダクションコードを実行し LLM 処理を行います。永続データは RDS Proxy 経由の Aurora Serverless v2になります。
 
 ## 進め方
 
