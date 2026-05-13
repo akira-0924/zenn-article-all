@@ -27,7 +27,9 @@ published: false
 
 また今回のプロダクトのインフラ構成を簡略化したものが下記になります。
 
-（※公開可能な範囲で図や箇条書きを差し込む想定です）
+![](https://static.zenn.studio/user-upload/63cc524f6afe-20260513.png)
+
+CloudFront（Lambda@Edge 付き）が入口で、S3 から SPA と画像を配信し、API は VPC 内の API Lambda（Docker）に届きます。API は SQS のメインキューに処理を渡し、Worker Lambda（Docker）が Amazon Bedrock で LLM 処理を行います。永続データは RDS Proxy 経由の Aurora（DB サブネット）、キュー失敗は DLQ です。
 
 ## 進め方
 
