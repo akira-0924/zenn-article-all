@@ -475,6 +475,8 @@ npm run load --scenario=xxx
 
 ### smoke test
 
+::::details smoke test の k6 出力（クリックで展開）
+
 ```
 █ THRESHOLDS 
 
@@ -524,10 +526,14 @@ running (03m07.2s), 0/1 VUs, 1 complete and 0 interrupted iterations
 default ✓ [======================================] 1 VUs  03m07.1s/10m0s  1/1 shared iters
 ```
 
+::::
+
 これは問題なさそうですね。うまく動いているし、エラーがないことも確認できます。
 
 
 ### load test
+
+::::details load test の k6 出力（クリックで展開）
 
 ```
 THRESHOLDS 
@@ -584,13 +590,9 @@ running (1h00m30.1s), 0000/0815 VUs, 1737 complete and 696 interrupted iteration
 
 ```
 
-こちらも k6 の結果は成功しています。
+::::
 
-```
-1000-users  ✓ [======================================] 043/051 VUs    10m0s  0.33 iters/s
-5000-users  ✓ [======================================] 218/262 VUs    10m0s  1.67 iters/s
-10000-users ✓ [======================================] 0435/0532 VUs  10m0s  3.33 iters/s
-```
+こちらも k6 の結果は成功しています。末尾の進捗行から、1000 / 5000 / 10000 各シナリオのレートも想定どおりです。
 
 リクエスト数も期待した結果になっていますね。1000-users / 5000-users / 10000-users 別に作成した Datadog のダッシュボードも見ながら確認してみます。
 
